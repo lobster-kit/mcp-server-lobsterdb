@@ -1,7 +1,61 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { DBError } from '@lobsterkit/db';
 import { getClient } from './state.js';
+
+// ── Proactive error guidance ─────────────────────────────────────────────────
+
+type ToolResult = { content: { type: 'text'; text: string }[] };
+
+const TIER_GUIDANCE: Record<string, string[]> = {
+  snapshot: [
+    'Cannot create snapshot: this operation requires Builder tier or higher.',
+    '',
+    'Tier overview:',
+    '- Free: 1 database, 500 MB, no snapshots',
+    '- Builder ($19/mo): 3 databases, 5 GB, snapshots, 7-day backup retention',
+    '- Pro ($49/mo): 10 databases, 25 GB, PITR',
+    '',
+    'Use get_account to check your current tier and limits.',
+  ],
+  create_database: [
+    'Cannot create database: you have reached the database limit for your tier.',
+    '',
+    'To create more databases, upgrade your tier:',
+    '- Free: 1 database',
+    '- Builder ($19/mo): 3 databases',
+    '- Pro ($49/mo): 10 databases',
+    '- Scale ($199/mo): unlimited',
+    '',
+    'Use get_account to check your current usage.',
+  ],
+};
+
+function handleDBError(err: unknown, operation: string): ToolResult | null {
+  if (!(err instanceof DBError)) return null;
+
+  if (err.status === 403) {
+    const lines = TIER_GUIDANCE[operation] ?? [
+      `This operation requires a higher account tier.`,
+      `Error: ${err.message}`,
+      '',
+      'Use get_account to check your current tier and limits.',
+    ];
+    return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+  }
+
+  if (err.status === 429) {
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `Rate limit exceeded for ${operation}. Wait a moment and try again.`,
+      }],
+    };
+  }
+
+  return null;
+}
 
 const server = new McpServer(
   { name: 'lobsterdb', version: '0.1.0' },
@@ -40,25 +94,31 @@ server.registerTool(
     },
   },
   async ({ name }) => {
-    const db = await getClient();
-    const database = await db.create(name);
+    try {
+      const db = await getClient();
+      const database = await db.create(name);
 
-    const lines = [
-      `✅ Database created: ${database.name}`,
-      `ID: ${database.id}`,
-      `Status: ${database.status}`,
-      `Connection string: ${database.connectionString}`,
-      `Schema: ${database.pgSchema}`,
-      `Tier: ${database.tier} (${['Free', 'Builder', 'Pro', 'Scale'][database.tier] ?? database.tier})`,
-      `Storage limit: ${database.limits.maxStorageGb}GB`,
-      `Max connections: ${database.limits.maxConnections}`,
-    ];
+      const lines = [
+        `✅ Database created: ${database.name}`,
+        `ID: ${database.id}`,
+        `Status: ${database.status}`,
+        `Connection string: ${database.connectionString}`,
+        `Schema: ${database.pgSchema}`,
+        `Tier: ${database.tier} (${['Free', 'Builder', 'Pro', 'Scale'][database.tier] ?? database.tier})`,
+        `Storage limit: ${database.limits.maxStorageGb}GB`,
+        `Max connections: ${database.limits.maxConnections}`,
+      ];
 
-    if (database.hint) {
-      lines.push(`\nHint: ${database.hint}`);
+      if (database.hint) {
+        lines.push(`\nHint: ${database.hint}`);
+      }
+
+      return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+    } catch (err) {
+      const guidance = handleDBError(err, 'create_database');
+      if (guidance) return guidance;
+      throw err;
     }
-
-    return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
   },
 );
 
@@ -236,22 +296,28 @@ server.registerTool(
     },
   },
   async ({ databaseId }) => {
-    const db = await getClient();
-    const snap = await db.snapshot(databaseId);
+    try {
+      const db = await getClient();
+      const snap = await db.snapshot(databaseId);
 
-    const lines = [
-      `Snapshot created: ${snap.id}`,
-      `Status: ${snap.status}`,
-      `Database: ${snap.databaseId}`,
-      `Size: ${snap.sizeBytes !== null ? `${Math.round(snap.sizeBytes / 1024)}KB` : 'calculating...'}`,
-      `Created: ${snap.createdAt}`,
-      '',
-      snap.status === 'creating'
-        ? 'The snapshot is still being created. It will be available for restore once status=ready.'
-        : '',
-    ];
+      const lines = [
+        `Snapshot created: ${snap.id}`,
+        `Status: ${snap.status}`,
+        `Database: ${snap.databaseId}`,
+        `Size: ${snap.sizeBytes !== null ? `${Math.round(snap.sizeBytes / 1024)}KB` : 'calculating...'}`,
+        `Created: ${snap.createdAt}`,
+        '',
+        snap.status === 'creating'
+          ? 'The snapshot is still being created. It will be available for restore once status=ready.'
+          : '',
+      ];
 
-    return { content: [{ type: 'text' as const, text: lines.filter(Boolean).join('\n') }] };
+      return { content: [{ type: 'text' as const, text: lines.filter(Boolean).join('\n') }] };
+    } catch (err) {
+      const guidance = handleDBError(err, 'snapshot');
+      if (guidance) return guidance;
+      throw err;
+    }
   },
 );
 
