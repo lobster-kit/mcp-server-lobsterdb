@@ -204,7 +204,7 @@ Running the same migration name twice is safe — it's silently skipped.
 | `db.list()` | `DatabaseSummary[]` | All databases on the account |
 | `db.get(id)` | `Database` | Full details + connection string |
 | `db.delete(id)` | `{ deleted }` | Permanently delete a database |
-| `db.query(id, sql, params?)` | `{ rows, rowCount, fields, truncated }` | Run parameterized SQL |
+| `db.query(id, sql, params?)` | `{ rows, rowCount, fields, truncated }` | Run parameterized SQL (multi-statement supported) |
 | `db.introspect(id)` | `{ tables, schemaText }` | LLM-optimized schema |
 | `db.snapshot(id)` | `Snapshot` | Create backup (Builder+) |
 | `db.listSnapshots(id)` | `Snapshot[]` | List backups (Builder+) |
@@ -223,12 +223,18 @@ Running the same migration name twice is safe — it's silently skipped.
 | `list_databases` | List all databases on the account |
 | `get_database` | Get details and connection string for a database |
 | `delete_database` | Permanently delete a database |
-| `query` | Run parameterized SQL — SELECT, INSERT, UPDATE, DELETE |
+| `query` | Run parameterized SQL — SELECT, INSERT, UPDATE, DELETE. Supports multi-statement SQL. |
 | `introspect_schema` | Get table/column schema optimized for LLM context |
 | `migrate` | Apply tracked, idempotent DDL migrations |
 | `list_migrations` | Show schema change history |
-| `snapshot` | Create a point-in-time backup (Builder+) |
+| `snapshot` | Create a DDL-aware point-in-time backup (Builder+) |
 | `get_account` | View tier, limits, and usage |
+
+---
+
+## Snapshots (v2)
+
+Snapshots capture both **DDL** (CREATE TABLE statements) and data for each table. On restore, tables are recreated from stored DDL and data is bulk-loaded via COPY. Serial/identity columns are handled automatically.
 
 ---
 
@@ -242,7 +248,7 @@ Running the same migration name twice is safe — it's silently skipped.
 | GET | `/v1/databases` | List databases |
 | GET | `/v1/databases/:id` | Get database |
 | DELETE | `/v1/databases/:id` | Delete database |
-| POST | `/v1/databases/:id/query` | Execute SQL |
+| POST | `/v1/databases/:id/query` | Execute SQL (multi-statement supported) |
 | GET | `/v1/databases/:id/schema` | Introspect schema |
 | POST | `/v1/databases/:id/rotate-credentials` | Rotate credentials |
 | POST | `/v1/databases/:id/snapshots` | Create snapshot (Builder+) |
