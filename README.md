@@ -27,7 +27,7 @@ On first use, an account is created automatically and your token is saved to `~/
 | `list_databases` | List all databases on the account |
 | `get_database` | Get details and connection string for a database |
 | `delete_database` | Permanently delete a database |
-| `query` | Run parameterized SQL — SELECT, INSERT, UPDATE, DELETE |
+| `query` | Run parameterized SQL — SELECT, INSERT, UPDATE, DELETE. Supports multi-statement SQL. |
 | `introspect_schema` | Get table/column schema optimized for LLM context |
 | `migrate` | Apply tracked, idempotent DDL migrations |
 | `list_migrations` | Show schema change history |
