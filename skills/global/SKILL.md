@@ -204,7 +204,7 @@ Running the same migration name twice is safe — it's silently skipped.
 | `db.list()` | `DatabaseSummary[]` | All databases on the account |
 | `db.get(id)` | `Database` | Full details + connection string |
 | `db.delete(id)` | `{ deleted }` | Permanently delete a database |
-| `db.query(id, sql, params?)` | `{ rows, rowCount, fields, truncated }` | Run parameterized SQL (multi-statement supported) |
+| `db.query(id, sql, params?)` | `{ rows, rowCount, fields, truncated }` | Run parameterized SQL (multi-statement supported; only the last statement's result is returned) |
 | `db.introspect(id)` | `{ tables, schemaText }` | LLM-optimized schema |
 | `db.snapshot(id)` | `Snapshot` | Create backup (Builder+) |
 | `db.listSnapshots(id)` | `Snapshot[]` | List backups (Builder+) |
@@ -223,11 +223,11 @@ Running the same migration name twice is safe — it's silently skipped.
 | `list_databases` | List all databases on the account |
 | `get_database` | Get details and connection string for a database |
 | `delete_database` | Permanently delete a database |
-| `query` | Run parameterized SQL — SELECT, INSERT, UPDATE, DELETE. Supports multi-statement SQL. |
+| `query` | Run parameterized SQL — SELECT, INSERT, UPDATE, DELETE. Supports multi-statement SQL (only the last statement's result is returned; intermediate results are discarded). |
 | `introspect_schema` | Get table/column schema optimized for LLM context |
 | `migrate` | Apply tracked, idempotent DDL migrations |
 | `list_migrations` | Show schema change history |
-| `snapshot` | Create a DDL-aware point-in-time backup (Builder+) |
+| `snapshot` | Create a v2 DDL-aware point-in-time backup (Builder+) |
 | `get_account` | View tier, limits, and usage |
 
 ---
@@ -248,11 +248,11 @@ Snapshots capture both **DDL** (CREATE TABLE statements) and data for each table
 | GET | `/v1/databases` | List databases |
 | GET | `/v1/databases/:id` | Get database |
 | DELETE | `/v1/databases/:id` | Delete database |
-| POST | `/v1/databases/:id/query` | Execute SQL (multi-statement supported) |
+| POST | `/v1/databases/:id/query` | Execute SQL (multi-statement supported; only last statement's result returned) |
 | GET | `/v1/databases/:id/schema` | Introspect schema |
 | POST | `/v1/databases/:id/rotate-credentials` | Rotate credentials |
-| POST | `/v1/databases/:id/snapshots` | Create snapshot (Builder+) |
-| GET | `/v1/databases/:id/snapshots` | List snapshots (Builder+) |
-| POST | `/v1/databases/:id/snapshots/:snapId/restore` | Restore snapshot (Builder+) |
+| POST | `/v1/databases/:id/snapshots` | Create v2 DDL-aware snapshot (Builder+) |
+| GET | `/v1/databases/:id/snapshots` | List v2 DDL-aware snapshots (Builder+) |
+| POST | `/v1/databases/:id/snapshots/:snapId/restore` | Restore from v2 DDL-aware snapshot (Builder+) |
 | POST | `/v1/billing/checkout` | Create Stripe checkout session |
 | POST | `/v1/billing/portal` | Create Stripe billing portal session |
