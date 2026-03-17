@@ -85,7 +85,7 @@ create_database(name: "pokemon-cards")
 
 ## Running SQL
 
-Always use `$1`, `$2`, ... placeholders — never interpolate values. **Multi-statement SQL is supported** — separate statements with semicolons; the result of the last statement is returned.
+Always use `$1`, `$2`, ... placeholders — never interpolate values. **Multi-statement SQL is supported** — separate statements with semicolons; only the last statement's result is returned and intermediate results are discarded.
 
 ```
 query(databaseId: "db_xxx", sql: "INSERT INTO cards (name, set) VALUES ($1, $2)", params: ["Charizard", "Base Set"])
@@ -138,5 +138,5 @@ Running the same migration name twice is safe — silently skipped.
 | `introspect_schema` | Get schema optimized for LLM context |
 | `migrate` | Apply tracked, idempotent DDL migrations |
 | `list_migrations` | Show schema change history |
-| `snapshot` | Create a DDL-aware point-in-time backup (Builder+) |
+| `snapshot` | Create a v2 DDL-aware point-in-time backup (Builder+) |
 | `get_account` | View tier, limits, and usage |
