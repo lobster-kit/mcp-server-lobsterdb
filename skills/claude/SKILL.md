@@ -45,7 +45,7 @@ Name migrations descriptively: `create_cards_table`, `add_favorite_to_cards`, `a
 ## Query Guidelines
 
 - Always use `$1`, `$2`, ... placeholders — never interpolate values into SQL strings
-- **Multi-statement SQL is supported** — separate statements with semicolons. The result of the last statement is returned.
+- **Multi-statement SQL is supported** — separate statements with semicolons. Only the last statement's result is returned; intermediate results are discarded.
 - Call `introspect_schema` first when working with an existing or unfamiliar database
 - Results are already sanitized — safe to pass directly into LLM context
 - Max 1,000 rows returned per query (truncated flag is set if more exist)
@@ -84,7 +84,7 @@ Name migrations descriptively: `create_cards_table`, `add_favorite_to_cards`, `a
 | `introspect_schema` | Get table/column structure optimized for LLM context |
 | `migrate` | Apply DDL changes — tracked, idempotent, named |
 | `list_migrations` | Show schema change history for a database |
-| `snapshot` | Create a point-in-time backup with DDL (Builder+ tier) |
+| `snapshot` | Create a v2 DDL-aware point-in-time backup (Builder+ tier) |
 | `get_account` | Check tier, limits, database count |
 
 ---
